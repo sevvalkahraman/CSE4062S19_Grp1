@@ -1,0 +1,107 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{multirow}
+\usepackage{tabu}
+
+\title{Introduction to Data Science and Analytics}
+\author{Group Number 1 / Delivery 2}
+\date{17 April 2019}
+
+\begin{document}
+
+\maketitle
+
+
+\begin{table}[htbp]
+\caption{Group Members}
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\multicolumn{4}{|c|}{\textbf{Group Members}} \\
+\cline{1-4} 
+\textbf{\textit{Group Member Name}}&
+\textbf{\textit{Number}}&
+\textbf{\textit{Department}}&
+\textbf{\textit{Semester}} \\
+\hline
+Şevvalnur Kahraman & 150116822 & Computer Engineering & 4 \\
+\hline
+Nurcihane Köroğlu & 150115062 & Computer Engineering & 4 \\
+\hline
+Emine Feyza Memiş & 150114077 & Computer Engineering & 4 \\
+\hline
+Gizem Aybüke Çeri & 150315060 & Industrial Engineering & 4 \\
+\hline
+Yiğit Hallaç & 150714036 & Electronics Engineering & 4 \\
+\hline
+Amine Boumusou & 199518004 & Computer Engineering & 4 \\
+\hline
+\end{tabular}
+\label{tab1}
+\end{center}
+\end{table}
+
+ 
+\setlength{\parindent}{4em}
+\setlength{\parskip}{1em}
+\renewcommand{\baselinestretch}{2.0}
+ 
+
+This dataset contains sentences labelled with positive or negative sentiment, extracted from reviews of products, movies, and restaurants with their format like "sentence score". 
+ 
+Score is either 1 (for positive) or 0 (for negative) and each sentences come from three different websites/fields that are imdb.com, amazon.com and yelp.com. For each website, there exist 500 positive and 500 negative sentences. Those were selected randomly for larger datasets of reviews. We attempted to select sentences that have a clearly positive or negative connotation, the goal was for no neutral sentences to be selected. 
+
+If you want to see the full datasets you can look for the followings:
+\textbf{imdb:} Maas et. al., 2011 'Learning word vectors for sentiment analysis'
+\newline \textbf{amazon:} McAuley et. al., 2013 'Hidden factors and hidden topics: Understanding rating dimensions with review text'
+\newline \textbf{yelp:} Yelp dataset challenge http://www.yelp.com/dataset\_challenge
+
+
+\begin{table}[htbp]
+\caption{Features/Attributes}
+\begin{center}
+\begin{tabular}{|m{5em}|m{5em}|m{15em}|m{5em}|m{5em}|}
+\hline
+\multicolumn{5}{|c|}{\textbf{Features/Attributes}} \\
+\cline{1-5} 
+\textbf{\textit{Number}}&
+\textbf{\textit{Features}}&
+\textbf{\textit{Description}}&
+\textbf{\textit{Type}}&
+\textbf{\textit{Target}}\\
+\hline
+1 & Sentence & It contains sentences come  from three different websites/fields & String & No\\
+\hline
+2 & Class & It contains score is either 1 (for positive) or 0 (for negative) & Numeric & Yes \\
+\hline
+
+\end{tabular}
+\label{tab1}
+\end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+\caption{Class Attribute Values}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multicolumn{4}{|c|}{\textbf{Class Attribute Values}} \\
+\cline{1-4} 
+\textbf{\textit{Number}}&
+\textbf{\textit{Class Value}}&
+\textbf{\textit{Number of Instances}}&
+\textbf{\textit{Description}}\\
+\hline
+1 & 0 & 1500 & It contain negative   sentences \\
+\hline
+2 & 1 & 1500 & It contains positive sentences \\
+\hline
+
+\end{tabular}
+\label{tab1}
+\end{center}
+\end{table}
+
+
+\end{document}
