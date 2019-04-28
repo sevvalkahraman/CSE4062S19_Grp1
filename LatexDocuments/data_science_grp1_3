@@ -1,0 +1,129 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{multirow}
+\usepackage{tabu}
+
+
+\title{Introduction to Data Science and Analytics}
+\author{Group Number 1 / Delivery 3}
+\date{28 April 2019}
+
+\begin{document}
+
+%\maketitle
+\begin{table}[htbp]
+\caption{Most used words in data set}
+\begin{center}
+\begin{tabular}{|m{12em}|m{5em}|}
+\hline
+\multicolumn{2}{|c|}{\textbf{Most Used Words}} \\
+\cline{1-2} 
+\textbf{\textit{Word}}&
+\textbf{\textit{Count}}\\
+\hline
+good & 221 \\
+\hline
+great & 192 \\
+\hline
+movie & 174 \\
+\hline
+phone & 159 \\
+\hline
+film & 150 \\
+\hline
+one & 136 \\
+\hline
+like & 123 \\
+\hline
+food & 122 \\
+\hline
+place & 111 \\
+\hline
+time & 106 \\
+\hline
+really & 102 \\
+\hline
+service & 101 \\
+\hline
+bad & 96 \\
+\hline
+would & 84 \\
+\hline
+well & 83 \\
+\hline
+best & 77 \\
+\hline
+even & 74 \\
+\hline
+ever & 72 \\
+\hline
+also & 71 \\
+\hline
+back & 68 \\
+\hline
+quality & 64 \\
+\hline
+love & 61 \\
+\hline
+go & 61 \\
+\hline
+made & 57 \\
+\hline
+product & 56 \\
+\hline
+get & 55 \\
+\hline
+work & 54 \\
+\hline
+could & 53 \\
+\hline
+works & 52 \\
+\hline
+better & 51 \\
+\hline
+nice & 51 \\
+\hline
+much & 50 \\
+\hline
+recommend & 49 \\
+\hline
+never & 49 \\
+\hline
+use & 49 \\
+\hline
+excellent & 48 \\
+\hline
+sound & 47 \\
+\hline
+headset & 47 \\
+\hline
+think & 46 \\
+\hline
+first & 45 \\
+\hline
+way & 44 \\
+\hline
+battery & 44 \\
+\hline
+see & 42 \\
+\hline
+make & 42 \\
+\hline
+pretty & 41 \\
+\hline
+acting & 40 \\
+\hline
+still & 39 \\
+\hline
+
+\end{tabular}
+\label{tab1}
+\end{center}
+\end{table}
+
+\setlength{\parindent}{3em}
+\setlength{\parskip}{1em}
+\renewcommand{\baselinestretch}{2.0}
+
+\thispagestyle{empty}
+\end{document}
