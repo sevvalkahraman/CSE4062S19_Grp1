@@ -68,6 +68,9 @@ def main():
     stop = set(stopwords.words('english'))
     #Add some neccessary words.
     stop.add("") #add empty word into stop set.
+    stop.add("-") 
+    stop.add("i'm") 
+    stop.add("i've") 
     #print (stop)
 
 
@@ -81,7 +84,7 @@ def main():
             removed_stop_words[length-1].append(sorted_list_words[i][1])
 
     #print most used 10 words
-    for i in range(10):
+    for i in range(50):
         print("{}. word is '{}' : {}" .format(i, removed_stop_words[i][0], removed_stop_words[i][1] ))
 
             
