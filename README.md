@@ -5,6 +5,6 @@ How to use/run sentiment_analysis.py ?
 Python 2.7 or 3+   (suggested 3+)
 
 **Libraries:**
-numpy, pandas, nltk, collections
+numpy, pandas, nltk, collections, matplotlib
 
 Install libraries with using this command *pip install libraryname*
