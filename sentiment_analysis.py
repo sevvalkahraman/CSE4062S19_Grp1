@@ -3,6 +3,7 @@ import pandas as pd
 
 import unicodedata, re, string
 #import nltk
+#nltk.download() #use this for to download nltk (popular packages)
 
 # import seaborn as sns
 # sns.set(color_codes=True)
@@ -21,6 +22,10 @@ from nltk.corpus import stopwords
 from collections import Counter
 
 import matplotlib.pyplot as plt
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import adjusted_rand_score
+from sklearn.cluster import KMeans
 
 
 
@@ -61,7 +66,8 @@ def main():
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'wo n\'t', 'will not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'n\'t', 'not')
 
-   
+    
+
     #Defining stop words
     stop = set(stopwords.words('english'))
     #Add some neccessary words.
@@ -104,7 +110,6 @@ def main():
         pos_tf.append(batch_result)
         #print(pos_batches[i+1],"entries' term frequency calculated")
         i += 1
-
 
 
     #Create dataframe
@@ -151,6 +156,33 @@ def main():
     plt.xlabel('Negative Frequency')
     plt.title('Negative Frequency vs Positive Frequency')
     plt.show()
+
+
+    #term frequency - inverse document frequency calculating
+    vectorizer = TfidfVectorizer(stop_words = stop)
+    X = vectorizer.fit_transform(dataset.Sentence)
+
+    true_k = 2 #cluster number
+    model = KMeans(n_clusters=true_k, init='k-means++', max_iter=100, n_init=1) #algorithm
+    model.fit(X) #training
+
+    #print clusters
+    print("Top terms per cluster:")
+    order_centroids = model.cluster_centers_.argsort()[:, ::-1]
+    terms = vectorizer.get_feature_names()
+    for i in range(true_k):
+        print("---------")
+        print("Cluster %d:" % i)
+        for ind in order_centroids[i, :20]:
+            print(' %s' % terms[ind])
+
+
+    #Example prediction
+    # print("Prediction")
+    # Y = vectorizer.transform(["lovely movie"])
+    # prediction = model.predict(Y)
+    # print(prediction)
+
 
 
 
