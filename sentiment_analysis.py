@@ -26,8 +26,44 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import adjusted_rand_score
 from sklearn.cluster import KMeans
+from sklearn.metrics.cluster import normalized_mutual_info_score
+from sklearn import metrics
+from scipy.misc import comb
+from itertools import combinations
+from sklearn.metrics import silhouette_samples, silhouette_score
+
+import statistics 
+
+#k-means model fit and results
+def kmeans(X, vectorizer, k):
+
+    model = KMeans(n_clusters=k, init='k-means++', max_iter=100, n_init=1) #algorithm
+    model.fit(X) #training
+
+    #print clusters
+    # print("Top terms per cluster:")
+    # order_centroids = model.cluster_centers_.argsort()[:, ::-1]
+    # terms = vectorizer.get_feature_names()
+    # for i in range(k):
+    #     print("---------")
+    #     print("Cluster %d:" % i)
+    #     for ind in order_centroids[i, :20]:
+    #         print(' %s' % terms[ind])
+
+    return model
 
 
+
+def rand_index_score(clusters, classes):
+    tp_plus_fp = comb(np.bincount(clusters), 2).sum()
+    tp_plus_fn = comb(np.bincount(classes), 2).sum()
+    A = np.c_[(clusters, classes)]
+    tp = sum(comb(np.bincount(A[A[:, 0] == i, 1]), 2).sum()
+             for i in set(clusters))
+    fp = tp_plus_fp - tp
+    fn = tp_plus_fn - tp
+    tn = comb(len(A), 2) - tp - fp - fn
+    return (tp + tn) / (tp + fp + fn + tn)
 
 
 def main():
@@ -161,27 +197,53 @@ def main():
     #term frequency - inverse document frequency calculating
     vectorizer = TfidfVectorizer(stop_words = stop)
     X = vectorizer.fit_transform(dataset.Sentence)
+    Y = dataset['Class']
 
-    true_k = 2 #cluster number
-    model = KMeans(n_clusters=true_k, init='k-means++', max_iter=100, n_init=1) #algorithm
-    model.fit(X) #training
+    true_k = [2,3,4,5] #cluster numbers
+    for i in range(len(true_k)):
+        print("K Value is:", true_k[i])
+        model = kmeans(X, vectorizer, true_k[i])
+        total = 0
+        for j in range(true_k[i]):
+            print("%d. cluster size: %d " %(j, list(model.labels_).count(j)))
+            total = list(model.labels_).count(j) + total
 
-    #print clusters
-    print("Top terms per cluster:")
-    order_centroids = model.cluster_centers_.argsort()[:, ::-1]
-    terms = vectorizer.get_feature_names()
-    for i in range(true_k):
-        print("---------")
-        print("Cluster %d:" % i)
-        for ind in order_centroids[i, :20]:
-            print(' %s' % terms[ind])
+        print("Overall average in clusters:", total/true_k[i])
+        #convert to a list
+        predicted_Y = list(model.labels_)
+        print("STD:", np.std(predicted_Y))
+        #calculate sse (true_y - predicted_y)**2
+        squared_errors = (Y - predicted_Y)**2
+        sum_of_squared_errors = sum(squared_errors)
+        print("SSE:", sum_of_squared_errors)
+        nmi = normalized_mutual_info_score(Y, predicted_Y )
+        print("NMI: ",nmi)
+        print("Silhouette Value:",silhouette_score(X, predicted_Y))
+        print("RI:", rand_index_score (Y, predicted_Y))
+        
+        
+        # Here we get the proportions
+        nb_samples = [sum(model.labels_ == m) for m in range(true_k[i])]
 
+        # On the next line the order is RANDOM. I do NOT know which cluster represents what.
+        # The first label should represent samples in cluster 0, and so on
+        if true_k[i] == 2:
+            labels = 0 , 1
+            colors = [ 'green', 'red']  # Same size as labels
+        elif true_k[i] == 3:
+            labels = 0, 1 , 2
+            colors = [ 'green', 'red', 'lightblue']
+        elif true_k[i] == 4:
+            labels = 0, 1 , 2, 3
+            colors = [ 'green', 'red', 'lightblue', 'grey']
+        elif true_k[i] == 5:
+            labels = 0, 1 , 2, 3, 4
+            colors = [ 'green', 'red', 'lightblue', 'grey', 'pink']
 
-    #Example prediction
-    # print("Prediction")
-    # Y = vectorizer.transform(["lovely movie"])
-    # prediction = model.predict(Y)
-    # print(prediction)
+        # Pie chart
+        plt.pie(nb_samples, labels=labels, colors=colors, autopct='%1.1f%%')
+        plt.axis('equal')
+        plt.show()
 
 
 
