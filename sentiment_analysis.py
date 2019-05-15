@@ -31,11 +31,22 @@ from sklearn import metrics
 from scipy.misc import comb
 from itertools import combinations
 from sklearn.metrics import silhouette_samples, silhouette_score
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import chi2
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.linear_model import SGDClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.externals import joblib
+
+import operator
 
 import statistics 
 
 #k-means model fit and results
-def kmeans(X, vectorizer, k):
+def kmeans(X, Y, vectorizer, k):
 
     model = KMeans(n_clusters=k, init='k-means++', max_iter=100, n_init=1) #algorithm
     model.fit(X) #training
@@ -50,20 +61,53 @@ def kmeans(X, vectorizer, k):
     #     for ind in order_centroids[i, :20]:
     #         print(' %s' % terms[ind])
 
-    return model
+
+    total = 0
+    for j in range(k):
+        print("%d. cluster size: %d " %(j, list(model.labels_).count(j)))
+        total = list(model.labels_).count(j) + total
+
+    print("Overall average in clusters:", total/k)
+    #convert to a list
+    predicted_Y = list(model.labels_)
+    print("STD:", np.std(predicted_Y))
+    #calculate sse (true_y - predicted_y)**2
+    squared_errors = (Y - predicted_Y)**2
+    sum_of_squared_errors = sum(squared_errors)
+    print("SSE:", sum_of_squared_errors)
+    nmi = normalized_mutual_info_score(Y, predicted_Y )
+    print("NMI: ",nmi)
+    print("Silhouette Value:",silhouette_score(X, predicted_Y))
+    print("RI:", rand_index_score (Y, predicted_Y))
+    
+    
+    # Here we get the proportions
+    nb_samples = [sum(model.labels_ == m) for m in range(k)]
+
+    # On the next line the order is RANDOM. I do NOT know which cluster represents what.
+    # The first label should represent samples in cluster 0, and so on
+    if k == 2:
+        labels = 0 , 1
+        colors = [ 'green', 'red']  # Same size as labels
+    elif k == 3:
+        labels = 0, 1 , 2
+        colors = [ 'green', 'red', 'lightblue']
+    elif k == 4:
+        labels = 0, 1 , 2, 3
+        colors = [ 'green', 'red', 'lightblue', 'grey']
+    elif k == 5:
+        labels = 0, 1 , 2, 3, 4
+        colors = [ 'green', 'red', 'lightblue', 'grey', 'pink']
+
+    # Pie chart
+    plt.pie(nb_samples, labels=labels, colors=colors, autopct='%1.1f%%')
+    plt.axis('equal')
+    plt.show()
+
+    return 
 
 
 
-def rand_index_score(clusters, classes):
-    tp_plus_fp = comb(np.bincount(clusters), 2).sum()
-    tp_plus_fn = comb(np.bincount(classes), 2).sum()
-    A = np.c_[(clusters, classes)]
-    tp = sum(comb(np.bincount(A[A[:, 0] == i, 1]), 2).sum()
-             for i in set(clusters))
-    fp = tp_plus_fp - tp
-    fn = tp_plus_fn - tp
-    tn = comb(len(A), 2) - tp - fp - fn
-    return (tp + tn) / (tp + fp + fn + tn)
 
 
 def main():
@@ -109,6 +153,10 @@ def main():
     #Add some neccessary words.
     stop.add("") #add empty word into stop set.
     stop.add("-")
+    stop.add("'")
+    stop.add("!")
+    stop.add('"')
+    stop.add("&")
     stop.add("would")
     stop.add("could")    
 
@@ -158,40 +206,42 @@ def main():
     term_freq_data.columns = ['negative', 'positive']
     #Create 'total' column and write its value.
     term_freq_data['total'] = term_freq_data['negative'] + term_freq_data['positive']
+
+
     #Print term frequencies dataframe by order. (Top 10)
-    print (term_freq_data.sort_values(by='total', ascending=False).iloc[:30])
+    #print (term_freq_data.sort_values(by='total', ascending=False).iloc[:30])
 
 
 
-    #Plotting most used words(negative)
-    y_pos = np.arange(30)
-    plt.figure(figsize=(12,10))
-    plt.bar(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30], align='center', alpha=0.5)
-    plt.xticks(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30].index,rotation='vertical')
-    plt.ylabel('Frequency')
-    plt.xlabel('Top 30 negative words')
-    plt.title('Top 30 tokens in negative sentiments')
-    plt.show()
+    # #Plotting most used words(negative)
+    # y_pos = np.arange(30)
+    # plt.figure(figsize=(12,10))
+    # plt.bar(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30], align='center', alpha=0.5)
+    # plt.xticks(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30].index,rotation='vertical')
+    # plt.ylabel('Frequency')
+    # plt.xlabel('Top 30 negative words')
+    # plt.title('Top 30 tokens in negative sentiments')
+    # plt.show()
 
-    #Plotting most used words(positive)
-    y_pos = np.arange(30)
-    plt.figure(figsize=(12,10))
-    plt.bar(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30], align='center', alpha=0.5)
-    plt.xticks(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30].index,rotation='vertical')
-    plt.ylabel('Frequency')
-    plt.xlabel('Top 30 positive tokens')
-    plt.title('Top 30 tokens in positive sentiments')
-    plt.show()
+    # #Plotting most used words(positive)
+    # y_pos = np.arange(30)
+    # plt.figure(figsize=(12,10))
+    # plt.bar(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30], align='center', alpha=0.5)
+    # plt.xticks(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30].index,rotation='vertical')
+    # plt.ylabel('Frequency')
+    # plt.xlabel('Top 30 positive tokens')
+    # plt.title('Top 30 tokens in positive sentiments')
+    # plt.show()
 
 
-    #Scatter plot matrix
-    import seaborn as sns
-    plt.figure(figsize=(8,6))
-    ax = sns.regplot(x="negative", y="positive",fit_reg=False, scatter_kws={'alpha':0.5},data=term_freq_data)
-    plt.ylabel('Positive Frequency')
-    plt.xlabel('Negative Frequency')
-    plt.title('Negative Frequency vs Positive Frequency')
-    plt.show()
+    # #Scatter plot matrix
+    # import seaborn as sns
+    # plt.figure(figsize=(8,6))
+    # ax = sns.regplot(x="negative", y="positive",fit_reg=False, scatter_kws={'alpha':0.5},data=term_freq_data)
+    # plt.ylabel('Positive Frequency')
+    # plt.xlabel('Negative Frequency')
+    # plt.title('Negative Frequency vs Positive Frequency')
+    # plt.show()
 
 
     #term frequency - inverse document frequency calculating
@@ -199,53 +249,106 @@ def main():
     X = vectorizer.fit_transform(dataset.Sentence)
     Y = dataset['Class']
 
-    true_k = [2,3,4,5] #cluster numbers
-    for i in range(len(true_k)):
-        print("K Value is:", true_k[i])
-        model = kmeans(X, vectorizer, true_k[i])
-        total = 0
-        for j in range(true_k[i]):
-            print("%d. cluster size: %d " %(j, list(model.labels_).count(j)))
-            total = list(model.labels_).count(j) + total
-
-        print("Overall average in clusters:", total/true_k[i])
-        #convert to a list
-        predicted_Y = list(model.labels_)
-        print("STD:", np.std(predicted_Y))
-        #calculate sse (true_y - predicted_y)**2
-        squared_errors = (Y - predicted_Y)**2
-        sum_of_squared_errors = sum(squared_errors)
-        print("SSE:", sum_of_squared_errors)
-        nmi = normalized_mutual_info_score(Y, predicted_Y )
-        print("NMI: ",nmi)
-        print("Silhouette Value:",silhouette_score(X, predicted_Y))
-        print("RI:", rand_index_score (Y, predicted_Y))
+    # true_k = [2,3,4,5] #cluster numbers
+    # for i in range(len(true_k)):
+    #     print("K Value is:", true_k[i])
+    #     kmeans(X, Y, vectorizer, true_k[i])
         
-        
-        # Here we get the proportions
-        nb_samples = [sum(model.labels_ == m) for m in range(true_k[i])]
-
-        # On the next line the order is RANDOM. I do NOT know which cluster represents what.
-        # The first label should represent samples in cluster 0, and so on
-        if true_k[i] == 2:
-            labels = 0 , 1
-            colors = [ 'green', 'red']  # Same size as labels
-        elif true_k[i] == 3:
-            labels = 0, 1 , 2
-            colors = [ 'green', 'red', 'lightblue']
-        elif true_k[i] == 4:
-            labels = 0, 1 , 2, 3
-            colors = [ 'green', 'red', 'lightblue', 'grey']
-        elif true_k[i] == 5:
-            labels = 0, 1 , 2, 3, 4
-            colors = [ 'green', 'red', 'lightblue', 'grey', 'pink']
-
-        # Pie chart
-        plt.pie(nb_samples, labels=labels, colors=colors, autopct='%1.1f%%')
-        plt.axis('equal')
-        plt.show()
 
 
+    #Calculating mutual information gain for features.
+    res_mi = dict(zip(vectorizer.get_feature_names(), mutual_info_classif(X, Y, discrete_features=True)))
 
+    #First 10
+    print("First 10 mutual information gain:")
+    i = 0
+    for w in sorted(res_mi, key=res_mi.get, reverse=True):
+        print (w, res_mi[w])
+        i = i + 1
+        if ( i == 10 ):
+            break
+
+    #Last 10
+    print("Last 10 mutual information gain:")
+    i = 0
+    for w in sorted(res_mi, key=res_mi.get, reverse=False):
+        print (w, res_mi[w])
+        i = i + 1
+        if ( i == 10 ):
+            break
+
+
+    res_chi = dict(zip(vectorizer.get_feature_names(), chi2(X, Y)[0]))
+    #wchi2 = sorted(wscores,key=lambda x:x[1]) 
+    #First 10
+    print("First 10 chi-square:")
+    i = 0
+    for w in sorted(res_chi, key=res_chi.get, reverse=True):
+        print (w, res_chi[w])
+        i = i + 1
+        if ( i == 10 ):
+            break
+    
+
+
+    print("-----------------------------------")
+
+
+    #Split the data set into training and testing set. 
+    X_train, X_test, y_train, y_test = train_test_split(dataset.Sentence, dataset.Class, test_size=0.3)
+
+    from sklearn import tree
+    from sklearn.naive_bayes import MultinomialNB
+    
+    #Pipeline array
+    pipelines = []
+
+    #Creating a pipeline (Decide the processes with order.)
+
+    #Decision Tree pipeline
+    pipelines.append( ("Decision Tree", 
+                    Pipeline([('vect', CountVectorizer(stop_words=stop)),
+                        ('tfidf', TfidfTransformer(use_idf=True)),
+                        ('clf', tree.DecisionTreeClassifier()),
+    ]))) 
+
+    #Naive Bayes pipeline
+    pipelines.append( ("Naive Bayes", 
+                    Pipeline([('vect', CountVectorizer(stop_words=stop)),
+                        ('tfidf', TfidfTransformer(use_idf=True)),
+                        ('clf', MultinomialNB()),
+    ])))
+
+
+    #Convert to an array
+    X_test_array = np.asarray(X_test)
+    y_test_array = np.asarray(y_test)
+
+    #FEATURE SELECTION ??
+    # from sklearn.feature_selection import GenericUnivariateSelect, f_classif, SelectFromModel
+    # selector = GenericUnivariateSelect(f_classif,mode="k_best", param=4)
+    # fit = selector.fit(dataset.Sentence, dataset.Class)
+
+    #Run for all pipelines.
+    for i in range(len(pipelines)):
+        clf = pipelines[i][1] #get the pipeline
+        algorithm = pipelines[i][0] #get the algorithm name
+        print("Algorithm is", algorithm)
+        #Training
+        clf.fit(X_train, y_train)
+        #Testing
+        predicted = clf.predict(X_test)
+        #Convert predicted result into an array
+        predicted_array = np.asarray(predicted)
+
+        #Print results
+        #for i in range(len(X_test_array)):
+            #print(i, X_test_array[i], "predicted: ", predicted_array[i], "real:", y_test_array[i])
+
+        #Calculating mean accuracy
+        print ("Accuracy, mean: %.3f" %(np.mean(predicted == y_test)))
+        #Calculate AUC (pos_label is positive class)
+        fpr, tpr, thresholds = metrics.roc_curve(y_test, predicted, pos_label=1)
+        print("AUC : %.3f" %(metrics.auc(fpr, tpr)))
 
 main()
