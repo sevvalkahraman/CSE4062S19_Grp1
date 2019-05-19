@@ -40,11 +40,29 @@ from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.externals import joblib
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import KFold
 
 import operator
 
 import statistics
 
+from wordcloud import WordCloud,STOPWORDS
+
+def wordcloud_draw(data, color = 'black'):
+    words = ' '.join(data)
+    cleaned_word = " ".join([word for word in words.split()
+                            if not word.startswith(',')
+                            ])
+    wordcloud = WordCloud(stopwords=STOPWORDS,
+                      background_color=color,
+                      width=2500,
+                      height=2000
+                     ).generate(cleaned_word)
+    plt.figure(1,figsize=(13, 13))
+    plt.imshow(wordcloud)
+    plt.axis('off')
+    plt.show()
 
 # k-means model fit and results
 def kmeans(X, Y, vectorizer, k):
@@ -115,12 +133,65 @@ def rand_index_score(clusters, classes):
     tn = comb(len(A), 2) - tp - fp - fn
     return (tp + tn) / (tp + fp + fn + tn)
 
+
+def k_fold(k, dataset, pipeline, text_file):
+
+    X = dataset['Sentence']
+    y = dataset['Class']
+
+    clf = pipeline[1]  # get the pipeline
+    algorithm = pipeline[0]  # get the algorithm name
+
+    kf = KFold(n_splits= k)
+    kf.get_n_splits(dataset)
+
+    total_acc = 0
+    total_auc = 0
+ 
+    i = 0
+    text_file.write("Algorithm name: %s\n" %(algorithm))
+    for train_index, test_index in kf.split(X):
+        #Get train and test set.
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        # Training
+        clf.fit(X_train, y_train)
+
+        # Testing
+        predicted = clf.predict(X_test)
+
+        # Convert predicted result into an array
+        predicted_array = np.asarray(predicted)
+
+        # Calculating mean accuracy
+        accuracy = accuracy_score(y_test, predicted)
+        #print("Accuracy, mean: %.3f" % (accuracy))
+        # Calculate AUC (pos_label is positive class)
+        fpr, tpr, thresholds = metrics.roc_curve(y_test, predicted, pos_label=1)
+        auc = metrics.auc(fpr, tpr)
+        #print("AUC : %.3f" % (auc))
+        text_file.write("K-fold : %d Accuracy: %.3f    AUC: %.3f\n" %(i, accuracy, auc))
+        i = i + 1
+
+        total_acc = total_acc + accuracy
+        total_auc = total_auc + auc
+
+    text_file.write("Mean Accuracy: %.3f    AUC: %.3f\n" %( total_acc/k, total_auc/k))
+
+
+
+
+
+
+
 def main():
+    text_file = open("output_file.txt","w")
+
     dataset = pd.read_csv("labelled_text.txt", delimiter="\t")
 
-    print("----Dataset information-----")
-    print(dataset.info())
-    print("----------------------------")
+    text_file.write("----Dataset information-----\n")
+    dataset.info(buf=text_file)
 
     # print(dataset.head() )
     # print(dataset['Class'])
@@ -143,7 +214,7 @@ def main():
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'had n\'t', 'had not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'have n\'t', 'have not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'would n\'t', 'would not')
-    dataset['Sentence'] = dataset['Sentence'].str.replace(r'ca n\'t', 'can not')
+    dataset['Sentence'] = dataset['Sentence'].str.replace(r'can\'t', 'can not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'could n\'t', 'could not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'must n\'t', 'must not')
     dataset['Sentence'] = dataset['Sentence'].str.replace(r'should n\'t', 'should not')
@@ -162,14 +233,32 @@ def main():
     stop.add("would")
     stop.add("could")
 
+
+
     # Create CountVectorizer for deleting stopwords
     from sklearn.feature_extraction.text import CountVectorizer
     cvec = CountVectorizer(stop_words=stop, max_features=10000)
     cvec.fit(dataset.Sentence)
 
+
+    #Word Cloud
+    pos = [1]
+    neg = [0]
+    train_pos = dataset[dataset.Class.isin(pos)]
+    train_pos = train_pos['Sentence']
+    wordcloud_draw(train_pos,'white')
+
+    train_neg = dataset[dataset.Class.isin(neg)]
+    train_neg = train_neg['Sentence']
+    wordcloud_draw(train_neg,'black')
+
     # Count words as positive or negative after deleting stop words.(TERM FREQUENCY)
     # Get negative sentences -> 0
     neg_document_matrix_nostop = cvec.transform(dataset.Sentence[dataset['Class'] == 0])
+
+
+ 
+    
 
     # Get negative words into array.
     neg_batches = np.linspace(0, 156061, 100).astype(int)
@@ -180,6 +269,8 @@ def main():
         neg_tf.append(batch_result)
         # print(neg_batches[i+1],"entries' term frequency calculated")
         i += 1
+
+    
 
     # Get positive sentences-> 1
     pos_document_matrix_nostop = cvec.transform(dataset.Sentence[dataset['Class'] == 1])
@@ -240,6 +331,7 @@ def main():
     # term frequency - inverse document frequency calculating
     vectorizer = TfidfVectorizer(stop_words=stop)
     X = vectorizer.fit_transform(dataset.Sentence)
+    #text_file.write("Words size is %d" %(len(X)))
     Y = dataset['Class']
 
     # true_k = [2,3,4,5] #cluster numbers
@@ -251,38 +343,50 @@ def main():
     res_mi = dict(zip(vectorizer.get_feature_names(), mutual_info_classif(X, Y, discrete_features=True)))
 
     # First 10
-    print("First 10 mutual information gain:")
+    text_file.write("\nFirst 15 mutual information gain:\n")
     i = 0
     for w in sorted(res_mi, key=res_mi.get, reverse=True):
-        print(w, res_mi[w])
+        text_file.write("%s %f\n" %(w, res_mi[w]))
+        #print(w, res_mi[w])
         i = i + 1
-        if (i == 10):
+        if (i == 15):
             break
 
     # Last 10
-    print("Last 10 mutual information gain:")
+    text_file.write("\nLast 15 mutual information gain:\n")
     i = 0
     for w in sorted(res_mi, key=res_mi.get, reverse=False):
-        print(w, res_mi[w])
+        text_file.write("%s %f\n" %(w, res_mi[w]))
+        #print(w, res_mi[w])
         i = i + 1
-        if (i == 10):
+        if (i == 15):
             break
 
     res_chi = dict(zip(vectorizer.get_feature_names(), chi2(X, Y)[0]))
-    # wchi2 = sorted(wscores,key=lambda x:x[1])
+
     # First 10
-    print("First 10 chi-square:")
+    text_file.write("\nFirst 15 chi-square:\n")
     i = 0
     for w in sorted(res_chi, key=res_chi.get, reverse=True):
-        print(w, res_chi[w])
+        text_file.write("%s %f\n" %(w, res_mi[w]))
+        #print(w, res_chi[w])
         i = i + 1
-        if (i == 10):
+        if (i == 15):
             break
 
-    print("-----------------------------------")
+    # First 10
+    text_file.write("\nLast 15 chi-square:\n")
+    i = 0
+    for w in sorted(res_chi, key=res_chi.get, reverse=False):
+        text_file.write("%s %f\n" %(w, res_mi[w]))
+        #print(w, res_chi[w])
+        i = i + 1
+        if (i == 15):
+            break
+
 
     # Split the data set into training and testing set.
-    X_train, X_test, y_train, y_test = train_test_split(dataset.Sentence, dataset.Class, test_size=0.3)
+    #X_train, X_test, y_train, y_test = train_test_split(dataset.Sentence, dataset.Class, test_size=0.3)
 
     from sklearn import tree
     from sklearn.naive_bayes import MultinomialNB
@@ -305,44 +409,83 @@ def main():
                                 ('tfidf', TfidfTransformer(use_idf=True)),
                                 ('clf', MultinomialNB()),
                                 ])))
-
-    pipelines.append(("k-NN ",
+    # K-NN pipeline
+    pipelines.append(("k-NN neighbor number is 1 ",
                       Pipeline([('vect', CountVectorizer(stop_words=stop)),
                                 ('tfidf', TfidfTransformer(use_idf=True)),
-                                ('clf', KNeighborsClassifier(1)),
+                                ('clf', KNeighborsClassifier(n_neighbors=1)),
+                                ])))
+    # K-NN pipeline 2
+    pipelines.append(("k-NN neighbor number is 2 ",
+                      Pipeline([('vect', CountVectorizer(stop_words=stop)),
+                                ('tfidf', TfidfTransformer(use_idf=True )),
+                                ('clf', KNeighborsClassifier(n_neighbors=2)),
+                                ])))
+
+    #Delete min 5
+
+    # Decision Tree pipeline 2
+    pipelines.append(("Decision Tree with remove words occurring less than 5 times",
+                      Pipeline([('vect', CountVectorizer(stop_words=stop, min_df = 5)),
+                                ('tfidf', TfidfTransformer(use_idf=True)),
+                                ('clf', tree.DecisionTreeClassifier()),
+                                ])))
+
+    # Naive Bayes pipeline 2
+    pipelines.append(("Naive Bayes with remove words occurring less than 5 times ",
+                      Pipeline([('vect', CountVectorizer(stop_words=stop, min_df = 5)),
+                                ('tfidf', TfidfTransformer(use_idf=True)),
+                                ('clf', MultinomialNB()),
+                                ])))
+    # K-NN pipeline 2
+    pipelines.append(("k-NN neighbor number is 1 with remove words occurring less than 5 times  ",
+                      Pipeline([('vect', CountVectorizer(stop_words=stop, min_df = 5)),
+                                ('tfidf', TfidfTransformer(use_idf=True)),
+                                ('clf', KNeighborsClassifier(n_neighbors=1)),
+                                ])))
+    # K-NN pipeline 2 2
+    pipelines.append(("k-NN neighbor number is 2 with remove words occurring less than 5 times  ",
+                      Pipeline([('vect', CountVectorizer(stop_words=stop, min_df = 5)),
+                                ('tfidf', TfidfTransformer(use_idf=True)),
+                                ('clf', KNeighborsClassifier(n_neighbors=2)),
                                 ])))
 
 
     # Convert to an array
-    X_test_array = np.asarray(X_test)
-    y_test_array = np.asarray(y_test)
+    # X_test_array = np.asarray(X_test)
+    # y_test_array = np.asarray(y_test)
 
-    # FEATURE SELECTION ??
-    # from sklearn.feature_selection import GenericUnivariateSelect, f_classif, SelectFromModel
-    # selector = GenericUnivariateSelect(f_classif,mode="k_best", param=4)
-    # fit = selector.fit(dataset.Sentence, dataset.Class)
+    
+    text_file.write("\nTest results:")
+
 
     # Run for all pipelines.
     for i in range(len(pipelines)):
         clf = pipelines[i][1]  # get the pipeline
         algorithm = pipelines[i][0]  # get the algorithm name
-        print("Algorithm is", algorithm)
-        # Training
-        clf.fit(X_train, y_train)
-        # Testing
-        predicted = clf.predict(X_test)
-        # Convert predicted result into an array
-        predicted_array = np.asarray(predicted)
 
-        # Print results
-        # for i in range(len(X_test_array)):
-        # print(i, X_test_array[i], "predicted: ", predicted_array[i], "real:", y_test_array[i])
+        k_fold(10, dataset, pipelines[i], text_file)
 
-        # Calculating mean accuracy
-        print("Accuracy, mean: %.3f" % (np.mean(predicted == y_test)))
-        # Calculate AUC (pos_label is positive class)
-        fpr, tpr, thresholds = metrics.roc_curve(y_test, predicted, pos_label=1)
-        print("AUC : %.3f" % (metrics.auc(fpr, tpr)))
+        # #print("Algorithm is", algorithm)
+        # # Training
+        # clf.fit(X_train, y_train)
+        # # Testing
+        # predicted = clf.predict(X_test)
+        # # Convert predicted result into an array
+        # predicted_array = np.asarray(predicted)
+
+        # # Print results
+        # # for i in range(len(X_test_array)):
+        # # print(i, X_test_array[i], "predicted: ", predicted_array[i], "real:", y_test_array[i])
+
+        # # Calculating mean accuracy
+        # accuracy = accuracy_score(y_test, predicted)
+        # #print("Accuracy, mean: %.3f" % (accuracy))
+        # # Calculate AUC (pos_label is positive class)
+        # fpr, tpr, thresholds = metrics.roc_curve(y_test, predicted, pos_label=1)
+        # auc = metrics.auc(fpr, tpr)
+        # #print("AUC : %.3f" % (auc))
+        # text_file.write("\nAlgorithm name: %s\nAccuracy: %.3f    AUC: %.3f\n" %(algorithm, accuracy, auc))
 
 
 main()
