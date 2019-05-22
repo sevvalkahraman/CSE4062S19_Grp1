@@ -368,7 +368,7 @@ def main():
     text_file.write("\nFirst 15 chi-square:\n")
     i = 0
     for w in sorted(res_chi, key=res_chi.get, reverse=True):
-        text_file.write("%s %f\n" %(w, res_mi[w]))
+        text_file.write("%s %f\n" %(w, res_chi[w]))
         #print(w, res_chi[w])
         i = i + 1
         if (i == 15):
@@ -378,11 +378,29 @@ def main():
     text_file.write("\nLast 15 chi-square:\n")
     i = 0
     for w in sorted(res_chi, key=res_chi.get, reverse=False):
-        text_file.write("%s %f\n" %(w, res_mi[w]))
+        text_file.write("%s %f\n" %(w, res_chi[w]))
         #print(w, res_chi[w])
         i = i + 1
         if (i == 15):
             break
+     
+    sorted_chi = sorted(res_chi, key=res_chi.get, reverse=False)
+    
+    dataset_1 = dataset.copy()
+    dataset_2 = dataset.copy()
+    dataset_3 = dataset.copy()
+
+    dataset_1["Sentence"] = [' '.join([item for item in x.split() 
+                  if item in sorted_chi[1000:-1]]) #last 4000
+                  for x in dataset_1000["Sentence"]]   
+
+    dataset_2["Sentence"] = [' '.join([item for item in x.split() 
+                  if item in sorted_chi[3000:-1]]) #last 2000
+                  for x in dataset_2000["Sentence"]]    
+
+    dataset_3["Sentence"] = [' '.join([item for item in x.split() 
+                  if item  in sorted_chi[4000:-1]]) #last 1000
+                  for x in dataset_3000["Sentence"]]               
 
 
     # Split the data set into training and testing set.
@@ -465,6 +483,12 @@ def main():
         algorithm = pipelines[i][0]  # get the algorithm name
 
         k_fold(10, dataset, pipelines[i], text_file)
+        
+        if(i < 4):
+            k_fold(10, dataset_1000, pipelines[i], text_file)
+            k_fold(10, dataset_2000, pipelines[i], text_file)
+            k_fold(10, dataset_3000, pipelines[i], text_file)
+
 
         # #print("Algorithm is", algorithm)
         # # Training
