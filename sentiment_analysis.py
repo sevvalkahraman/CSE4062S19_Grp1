@@ -297,36 +297,36 @@ def main():
     term_freq_data['total'] = term_freq_data['negative'] + term_freq_data['positive']
 
     # Print term frequencies dataframe by order. (Top 10)
-    # print (term_freq_data.sort_values(by='total', ascending=False).iloc[:30])
+    print (term_freq_data.sort_values(by='total', ascending=False).iloc[:30])
 
-    # #Plotting most used words(negative)
-    # y_pos = np.arange(30)
-    # plt.figure(figsize=(12,10))
-    # plt.bar(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30], align='center', alpha=0.5)
-    # plt.xticks(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30].index,rotation='vertical')
-    # plt.ylabel('Frequency')
-    # plt.xlabel('Top 30 negative words')
-    # plt.title('Top 30 tokens in negative sentiments')
-    # plt.show()
+    #Plotting most used words(negative)
+    y_pos = np.arange(30)
+    plt.figure(figsize=(12,10))
+    plt.bar(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30], align='center', alpha=0.5)
+    plt.xticks(y_pos, term_freq_data.sort_values(by='negative', ascending=False)['negative'][:30].index,rotation='vertical')
+    plt.ylabel('Frequency')
+    plt.xlabel('Top 30 negative words')
+    plt.title('Top 30 tokens in negative sentiments')
+    plt.show()
 
-    # #Plotting most used words(positive)
-    # y_pos = np.arange(30)
-    # plt.figure(figsize=(12,10))
-    # plt.bar(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30], align='center', alpha=0.5)
-    # plt.xticks(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30].index,rotation='vertical')
-    # plt.ylabel('Frequency')
-    # plt.xlabel('Top 30 positive tokens')
-    # plt.title('Top 30 tokens in positive sentiments')
-    # plt.show()
+    #Plotting most used words(positive)
+    y_pos = np.arange(30)
+    plt.figure(figsize=(12,10))
+    plt.bar(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30], align='center', alpha=0.5)
+    plt.xticks(y_pos, term_freq_data.sort_values(by='positive', ascending=False)['positive'][:30].index,rotation='vertical')
+    plt.ylabel('Frequency')
+    plt.xlabel('Top 30 positive tokens')
+    plt.title('Top 30 tokens in positive sentiments')
+    plt.show()
 
-    # #Scatter plot matrix
-    # import seaborn as sns
-    # plt.figure(figsize=(8,6))
-    # ax = sns.regplot(x="negative", y="positive",fit_reg=False, scatter_kws={'alpha':0.5},data=term_freq_data)
-    # plt.ylabel('Positive Frequency')
-    # plt.xlabel('Negative Frequency')
-    # plt.title('Negative Frequency vs Positive Frequency')
-    # plt.show()
+    #Scatter plot matrix
+    import seaborn as sns
+    plt.figure(figsize=(8,6))
+    ax = sns.regplot(x="negative", y="positive",fit_reg=False, scatter_kws={'alpha':0.5},data=term_freq_data)
+    plt.ylabel('Positive Frequency')
+    plt.xlabel('Negative Frequency')
+    plt.title('Negative Frequency vs Positive Frequency')
+    plt.show()
 
     # term frequency - inverse document frequency calculating
     vectorizer = TfidfVectorizer(stop_words=stop)
@@ -334,10 +334,10 @@ def main():
     #text_file.write("Words size is %d" %(len(X)))
     Y = dataset['Class']
 
-    # true_k = [2,3,4,5] #cluster numbers
-    # for i in range(len(true_k)):
-    #     print("K Value is:", true_k[i])
-    #     kmeans(X, Y, vectorizer, true_k[i])
+    true_k = [2,3,4,5] #cluster numbers
+    for i in range(len(true_k)):
+        print("K Value is:", true_k[i])
+        kmeans(X, Y, vectorizer, true_k[i])
 
     # Calculating mutual information gain for features.
     res_mi = dict(zip(vectorizer.get_feature_names(), mutual_info_classif(X, Y, discrete_features=True)))
@@ -392,15 +392,15 @@ def main():
 
     dataset_1["Sentence"] = [' '.join([item for item in x.split() 
                   if item in sorted_chi[1000:-1]]) #last 4000
-                  for x in dataset_1000["Sentence"]]   
+                  for x in dataset_1["Sentence"]]   
 
     dataset_2["Sentence"] = [' '.join([item for item in x.split() 
                   if item in sorted_chi[3000:-1]]) #last 2000
-                  for x in dataset_2000["Sentence"]]    
+                  for x in dataset_2["Sentence"]]    
 
     dataset_3["Sentence"] = [' '.join([item for item in x.split() 
                   if item  in sorted_chi[4000:-1]]) #last 1000
-                  for x in dataset_3000["Sentence"]]               
+                  for x in dataset_3["Sentence"]]               
 
 
     # Split the data set into training and testing set.
@@ -485,9 +485,9 @@ def main():
         k_fold(10, dataset, pipelines[i], text_file)
         
         if(i < 4):
-            k_fold(10, dataset_1000, pipelines[i], text_file)
-            k_fold(10, dataset_2000, pipelines[i], text_file)
-            k_fold(10, dataset_3000, pipelines[i], text_file)
+            k_fold(10, dataset_1, pipelines[i], text_file)
+            k_fold(10, dataset_2, pipelines[i], text_file)
+            k_fold(10, dataset_3, pipelines[i], text_file)
 
 
         # #print("Algorithm is", algorithm)
